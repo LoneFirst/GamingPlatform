@@ -5,7 +5,7 @@ $this->reg('register', 'user@register');
 $this->reg('logout', 'user@logout');
 
 $this->reg('home', 'home@index');
-$this->reg('create', 'game@create', 'POST');
+$this->reg('create', 'game@create');
 $this->reg('manage', 'game@manage');
 $this->reg('convert', 'home@convert', 'POST');
 $this->reg('change', 'game@change', 'POST');

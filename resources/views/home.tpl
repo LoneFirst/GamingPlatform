@@ -88,6 +88,9 @@
                 <strong>游戏: </strong> {{ $game['game'] }}</br>
                 <strong>到期时间: </strong> {{ $game['time'] }}</br>
                 <strong>人数限制: </strong> {{ $game['limit'] }}</br>
+                <strong>端口: </strong> {{ $Port }}</br>
+                <strong>脚本端口: </strong> {{ $QueryPort }}</br>
+                <strong>RCON端口: </strong> {{ $RCONPort }}</br>
             </p>
             <form class="form-inline" role="form">
                 <input id="convertid" type="hidden" value="{{ $game['id'] }}"></input>

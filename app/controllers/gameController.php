@@ -8,7 +8,8 @@ use models\games;
 class gameController
 {
     private static $gamePath = [
-        'ark' => '',
+        'ark' => 'D:\ARK\原版',
+        'userBase' => 'D:\ARK',
     ];
 
     public function create()
@@ -18,8 +19,43 @@ class gameController
         }
         $user = $_SESSION['user'];
         $game = $_POST['game'];
-        $c = count(games::select(['id'], ['1' => '1']));
-        //self::cp($gamePath['ark'], /*path*/);
+        $c = intval(count(games::select(['id'], ['1' => '1'])));
+        $port = 7777 + $c * 3;
+        $qp = 27015 + $c * 3;
+        $rp = 27017 + $c * 3;
+        $filePath = self::$gamePath['userBase'].'\\'.$port;
+        self::cp(self::$gamePath['ark'], $filePath);
+
+        $h = fopen($filePath.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini', 'rb');
+        $c = '';
+        while(!feof($h)) {
+            $line = fgets($h);
+            if (!strstr($line, '=')) {
+                $c .= $line;
+                continue;
+            }
+            $t = explode('=', $line);
+            switch ($t[0]) {
+                case 'Port':
+                    $c .= 'Port='.$port.PHP_EOL;
+                    break;
+
+                case 'QueryPort':
+                    $c .= 'QueryPort='.$gp.PHP_EOL;
+                    break;
+
+                case 'RCONPort':
+                    $c .= 'RCONPort='.$rp.PHP_EOL;
+                    break;
+
+                default:
+                    $c .= $line;
+                    break;
+            }
+        }
+        fclose($h);
+        file_put_contents($filePath.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini');
+
         games::create(['game' => $game, 'owner' => $user]);
         echo 'success';
     }
@@ -64,16 +100,40 @@ class gameController
         $game['game'] = games::$gameName[$game['game']];
         $view->push('game', $game);
 
-        $h = fopen('C:\xampp\htdocs\tmp\GameUserSettings.ini', 'rb');
+        $gameId = $_GET['id'];
+        $port = 7774 + $gameId * 3;
+        $filePath = $gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini';
+
+
+        // GameUserSettings 设置
+        $h = fopen($filePath.'\GameUserSettings.ini', 'rb');
         $c = '';
         while(!feof($h)) {
             $line = fgets($h);
+            if (!strstr($line, '=')) {
+                continue;
+            }
             $t = explode('=', $line);
-            $c .= self::handleHtml($t[0], $t[1]);
+            switch ($t[0]) {
+                case 'Port':
+                    $Port = $t[1];
+                    break;
+                case 'QueryPort':
+                    $QueryPort = $t[1];
+                    break;
+
+                case 'RCONPort':
+                    $RCONPort = $t[1];
+                    break;
+
+                default:
+                    $c .= self::handleHtml($t[0], $t[1]);
+                    break;
+            }
         }
         fclose($h);
 
-        $h = fopen('C:\xampp\htdocs\tmp\A.ini', 'rb');
+        $h = fopen($filePath.'\Game.ini', 'rb');
         $gameChangeHtml = '';
         while(!feof($h)) {
             $line = fgets($h);
@@ -123,6 +183,9 @@ class gameController
 
         $view->push('managePageHtml', $c);
         $view->push('gameChangeHtml', $gameChangeHtml);
+        $view->push('Port', $Port);
+        $view->push('QueryPort', $QueryPort);
+        $view->push('RCONPort', $RCONPort);
         $view->render();
     }
 
@@ -131,6 +194,11 @@ class gameController
         if (!users::auth()) {
             redirect(FILE_PATH);
         }
+
+        $gameId = $_GET['id'];
+        $port = 7774 + $gameId * 3;
+        $filePath = $gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini';
+
         $h = fopen(self::$temp, 'rb');
         while(!feof($h)) {
             $line = fgets($h);
@@ -156,6 +224,11 @@ class gameController
         if (!users::auth()) {
             redirect(FILE_PATH);
         }
+
+        $gameId = $_GET['id'];
+        $port = 7774 + $gameId * 3;
+        $filePath = $gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\Game.ini';
+
         $h = fopen(self::$temp, 'rb');
         while(!feof($h)) {
             $line = fgets($h);

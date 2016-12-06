@@ -53,6 +53,30 @@ class homeController
                         }
                     } elseif ($type == 'limit') {
                         $value = $game['limit'] + $st['value'];
+
+                        $port = 7774 + $gameId * 3;
+                        $filePath = $gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini';
+                        $h = fopen($filePath, 'rb');
+                        $c = '';
+                        while(!feof($h)) {
+                            $line = fgets($h);
+                            if (!strstr($line, '=')) {
+                                $c .= $line;
+                                continue;
+                            }
+                            $t = explode('=', $line);
+                            switch ($t[0]) {
+                                case 'MaxPlayers':
+                                    $c .= 'MaxPlayers='.$value.PHP_EOL;
+                                    break;
+                                default:
+                                    $c .= $line;
+                                    break;
+                            }
+                        }
+                        fclose($h);
+                        file_put_contents($filePath);
+
                     }
                     games::update(['id' => $gameId], [$type => $value]);
                     keys::update(['key' => $_POST['key']], ['used' => $user]);
