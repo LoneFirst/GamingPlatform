@@ -8,7 +8,7 @@ use models\games;
 class gameController
 {
     private static $gamePath = [
-        'ark' => 'D:\ARK\原版',
+        'ark' => 'D:\ARK\base',
         'userBase' => 'D:\ARK',
     ];
 
@@ -24,7 +24,7 @@ class gameController
         $qp = 27015 + $c * 3;
         $rp = 27017 + $c * 3;
         $filePath = self::$gamePath['userBase'].'\\'.$port;
-        self::cp(self::$gamePath['ark'], $filePath);
+        cp(self::$gamePath['ark'], $filePath, 1);
 
         $h = fopen($filePath.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini', 'rb');
         $c = '';
@@ -58,22 +58,6 @@ class gameController
 
         games::create(['game' => $game, 'owner' => $user]);
         echo 'success';
-    }
-
-    private static function cp($src, $dst)
-    {
-        $dir = opendir($src);
-        @mkdir($dst);
-        while(false !== ( $file = readdir($dir)) ) {
-            if (( $file != '.' ) && ( $file != '..' )) {
-                if ( is_dir($src . '/' . $file) ) {
-                    self::cp($src . '/' . $file,$dst . '/' . $file);
-                } else {
-                    copy($src . '/' . $file,$dst . '/' . $file);
-                }
-            }
-        }
-        closedir($dir);
     }
 
     public function manage()

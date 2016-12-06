@@ -50,6 +50,26 @@ function response() {
     return new core\response;
 }
 
+function cp($src, $dst) {
+    if (!file_exists($src)) {
+        echo $src;
+        exit('目录不存在');
+    }
+    $dir = opendir($src);
+    @mkdir($dst);
+    while(false !== ( $file = readdir($dir)) ) {
+        if (( $file != '.' ) && ( $file != '..' )) {
+            if ( is_dir($src . '/' . $file) ) {
+                cp($src . '/' . $file,$dst . '/' . $file);
+            } else {
+                copy($src . '/' . $file,$dst . '/' . $file);
+            }
+        }
+    }
+    closedir($dir);
+}
+
+
 // 检索路由
 new core\route;
 // 整个请求的生命周期由此开始
