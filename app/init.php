@@ -40,7 +40,7 @@ function view($viewName,array $data = NULL)
 
 
 // 重定向
-function redirect(string $url) {
+function redirect($url) {
     header('Location: '.$url);
     exit();
 }

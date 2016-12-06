@@ -15,7 +15,6 @@
 
         <style>
         body {
-          min-height: 2000px;
           padding-top: 70px;
         }
         </style>
@@ -36,7 +35,7 @@
                 </div>
                 <div id="navbar" class="navbar-collapse collapse">
                     <ul class="nav navbar-nav">
-                        <li {{ ($section=='纵览')?'class="active"':'' }}><a href="#">纵览</a></li>
+                        <li {{ ($section=='纵览')?'class="active"':'' }}><a href="./home">纵览</a></li>
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
                         <li><a href="./logout">登出</a></li>
@@ -85,10 +84,10 @@
             @elseif $section == '管理'
 
             <p>
-                <strong>id:</strong> {{ $game['id'] }}
-                <strong>游戏: </strong> {{ $game['game'] }}
-                <strong>到期时间: </strong> {{ $game['time'] }}
-                <strong>人数限制: </strong> {{ $game['limit'] }}
+                <strong>id:</strong> {{ $game['id'] }}</br>
+                <strong>游戏: </strong> {{ $game['game'] }}</br>
+                <strong>到期时间: </strong> {{ $game['time'] }}</br>
+                <strong>人数限制: </strong> {{ $game['limit'] }}</br>
             </p>
             <form class="form-inline" role="form">
                 <input id="convertid" type="hidden" value="{{ $game['id'] }}"></input>
@@ -116,6 +115,31 @@
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
                                 <button id="changebtn" type="button" class="btn btn-primary">保存更改</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#gameChange">更改游戏设置</button>
+                <div class="modal fade" id="gameChange" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                                <h4 class="modal-title">更改游戏配置</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <form id="gameChanger" action="./gameChange" method="POST" class="form-horizontal" role="form">
+                                            {{ $gameChangeHtml }}
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                                <button id="gameChangebtn" type="button" class="btn btn-primary">保存更改</button>
                             </div>
                         </div>
                     </div>
@@ -169,6 +193,9 @@
 
                 $('#changebtn').click(function() {
                     $('#changer').submit()
+                })
+                $('#gameChangebtn').click(function() {
+                    $('#gameChanger').submit()
                 })
             })
         </script>

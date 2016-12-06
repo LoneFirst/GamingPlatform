@@ -68,15 +68,61 @@ class gameController
         $c = '';
         while(!feof($h)) {
             $line = fgets($h);
-            if (!strstr($line, '=')) {
-                continue;
-            }
             $t = explode('=', $line);
             $c .= self::handleHtml($t[0], $t[1]);
         }
         fclose($h);
 
+        $h = fopen('C:\xampp\htdocs\tmp\A.ini', 'rb');
+        $gameChangeHtml = '';
+        while(!feof($h)) {
+            $line = fgets($h);
+            if (!strstr($line, '=')) {
+                $line = substr($line, 1, -3);
+                $tmp = explode(',', $line);
+                $gameChangeHtml .= '<div class="form-group">
+                      <label class="col-sm-6 control-label">经验值模式</label>
+                      <div class="col-sm-6">
+                          <select name="expMode" class="form-control">
+                              <option value="cs">成神</option>
+                              <option value="fgf">仿官方</option>
+                          </select>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="col-sm-6 control-label">人物等级</label>
+                      <div class="col-sm-6">
+                        <input name="rwdj" class="form-control" value="'.$tmp[1].'">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="col-sm-6 control-label">每一级技能点</label>
+                      <div class="col-sm-6">
+                        <input name="myjjnd" class="form-control" value="'.$tmp[2].'">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="col-sm-6 control-label">驯服龙等级</label>
+                      <div class="col-sm-6">
+                        <input name="xfldj" class="form-control" value="'.$tmp[3].'">
+                      </div>
+                    </div>';
+                break;
+            } else {
+                $t = explode('=', $line);
+                $gameChangeHtml .= '
+                <div class="form-group">
+                  <label class="col-sm-6 control-label">'.self::$trans[$t[0]].'</label>
+                  <div class="col-sm-6">
+                    <input name="'.$t[0].'" class="form-control" value="'.$t[1].'">
+                  </div>
+                </div>';
+            }
+        }
+        fclose($h);
+
         $view->push('managePageHtml', $c);
+        $view->push('gameChangeHtml', $gameChangeHtml);
         $view->render();
     }
 
@@ -100,22 +146,110 @@ class gameController
             }
         }
         fclose($h);
+        // file 需要设置
         file_put_contents($file, $r);
         echo '<script>history.go(-1)</script>';
     }
 
+    public function gameChange()
+    {
+        if (!users::auth()) {
+            redirect(FILE_PATH);
+        }
+        $h = fopen(self::$temp, 'rb');
+        while(!feof($h)) {
+            $line = fgets($h);
+            if (!strstr($line, '=')) {
+                $r .= '['.$_POST['expMode'].','.$_POST['rwdj'].','.$_POST['myjjnd'].','.$_POST['xfldj'].']'.PHP_EOL;
+                $r .= 'LevelExperienceRampOverrides=(';
+                $exp = 10;
+                for ($i=0;$i<$_POST['rwdj'];$i++) {
+                    $tmp .= 'ExperiencePointsForLevel['.$i.']='.$exp;
+                    if ($_POST['expMode'] == 'cs') {
+                        $exp = 10;
+                    } else if ($_POST['expMode'] == 'fgf') {
+                        $exp += $i * 5 + 10;
+                    }
+                }
+                $tmp = substr($tmp, 0, -1);
+                $r .= $tmp.')'.PHP_EOL;
+                $r .= 'LevelExperienceRampOverrides=(';
+                $exp = 10;
+                for ($i=0;$i<$_POST['xfldj'];$i++) {
+                    $tmp .= 'ExperiencePointsForLevel['.$i.']='.$exp;
+                    if ($_POST['expMode'] == 'cs') {
+                        $exp = 10;
+                    } else if ($_POST['expMode'] == 'fgf') {
+                        $exp += $i * 5 + 10;
+                    }
+                }
+                $tmp = substr($tmp, 0, -1);
+                $r .= $tmp.')'.PHP_EOL;
+                for ($i=0;$i<$_POST['rwdj'];$i++) {
+                    $r .= 'OverridePlayerLevelEngramPoints='.$_POST['mjjnd'].PHP_EOL;
+                }
+                break;
+            }
+            $t = explode('=', $line);
+            if (isset($_POST[$t[0]])) {
+                $r .= $t[0].'='.$_POST[$t[0]].PHP_EOL;
+            } else {
+                $r .= $line;
+            }
+        }
+        fclose($h);
+        // file 需要设置
+        file_put_contents($file, $r);
+        echo '<script>history.go(-1)</script>';
+    }
+
+    public static $trans = [
+        'PerLevelStatsMultiplier_Player[0]' => '玩家生命',
+        'PerLevelStatsMultiplier_Player[1]' => '玩家耐力',
+        'PerLevelStatsMultiplier_Player[2]' => '玩家麻痹值',
+        'PerLevelStatsMultiplier_Player[3]' => '玩家氧气',
+        'PerLevelStatsMultiplier_Player[4]' => '玩家食物',
+        'PerLevelStatsMultiplier_Player[5]' => '玩家水',
+        'PerLevelStatsMultiplier_Player[6]' => '玩家温度',
+        'PerLevelStatsMultiplier_Player[7]' => '玩家负重',
+        'PerLevelStatsMultiplier_Player[8]' => '玩家近战伤害',
+        'PerLevelStatsMultiplier_Player[9]' => '玩家移动速度',
+        'PerLevelStatsMultiplier_Player[10]' => '玩家坚韧（抗寒抗热）',
+        'PerLevelStatsMultiplier_Player[11]' => '玩家制造速度',
+        'PerLevelStatsMultiplier_DinoTamed[0]' => '驯服龙生命',
+        'PerLevelStatsMultiplier_DinoTamed[1]' => '驯服龙耐力',
+        'PerLevelStatsMultiplier_DinoTamed[2]' => '驯服龙麻痹值',
+        'PerLevelStatsMultiplier_DinoTamed[3]' => '驯服龙氧气',
+        'PerLevelStatsMultiplier_DinoTamed[4]' => '驯服龙食物',
+        'PerLevelStatsMultiplier_DinoTamed[5]' => '驯服龙水',
+        'PerLevelStatsMultiplier_DinoTamed[6]' => '驯服龙温度',
+        'PerLevelStatsMultiplier_DinoTamed[7]' => '驯服龙负重',
+        'PerLevelStatsMultiplier_DinoTamed[8]' => '驯服龙近战伤害',
+        'PerLevelStatsMultiplier_DinoTamed[9]' => '驯服龙移动速度',
+        'PerLevelStatsMultiplier_DinoWild[0]' => '野生龙生命',
+        'PerLevelStatsMultiplier_DinoWild[1]' => '野生龙耐力',
+        'PerLevelStatsMultiplier_DinoWild[2]' => '野生龙麻痹值',
+        'PerLevelStatsMultiplier_DinoWild[3]' => '野生龙氧气',
+        'PerLevelStatsMultiplier_DinoWild[4]' => '野生龙食物',
+        'PerLevelStatsMultiplier_DinoWild[5]' => '野生龙水',
+        'PerLevelStatsMultiplier_DinoWild[6]' => '野生龙温度',
+        'PerLevelStatsMultiplier_DinoWild[7]' => '野生龙负重',
+        'PerLevelStatsMultiplier_DinoWild[8]' => '野生龙近战伤害',
+        'PerLevelStatsMultiplier_DinoWild[9]' => '野生龙移动速度',
+    ];
+
     public static $data = [
+        'SessionName' => '服务器名称【建议不超过20个字】',
+        'Message' => '进服公告',
+        'Duration' => '进服公告持续时间，单位为秒',
         // [SessionSettings]
         'SessionName' => '服务器名称',
-        'Port' => '服务器源端口',
-        'QueryPort' => '目标端口',
 
         // [ServerSettings]
         'ServerPassword' => '服务器密码',
         'ServerAdminPassword' => '管理员密码',
         'SpectatorPassword' => '观察者密码',
         'RCONEnabled' => '启用RCON端口',
-        'RCONPort' => 'RCON端口',
         'RCONServerGameLogBuffer' => 'RCON服务器日志缓冲区',
         'AdminLogging' => '管理聊天日志',
         'ActiveMods' => 'MOD ID',
