@@ -17,6 +17,9 @@
         body {
           padding-top: 70px;
         }
+        .container {
+            max-width: 480px;
+        }
         </style>
     </head>
 
@@ -82,22 +85,28 @@
                     <h1>你还没有创建任何服务器,赶快创建一个吧</h1>
                 @endif
             @elseif $section == '管理'
-
-            <p>
-                <strong>id:</strong> {{ $game['id'] }}</br>
-                <strong>游戏: </strong> {{ $game['game'] }}</br>
-                <strong>到期时间: </strong> {{ $game['time'] }}</br>
-                <strong>人数限制: </strong> {{ $game['limit'] }}</br>
-                <strong>端口: </strong> {{ $Port }}</br>
-                <strong>脚本端口: </strong> {{ $QueryPort }}</br>
-                <strong>RCON端口: </strong> {{ $RCONPort }}</br>
-            </p>
-            <form class="form-inline" role="form">
-                <input id="convertid" type="hidden" value="{{ $game['id'] }}"></input>
-                <input id="convertkey" type="text" class="form-control"></input>
-                <a id="convertbtn" class="btn btn-default">使用兑换码</a>
-                <label id="convertlb"></label>
-            </form>
+                <p>
+                    <strong>id:</strong> {{ $game['id'] }}</br>
+                    <strong>游戏: </strong> {{ $game['game'] }}</br>
+                    <strong>到期时间: </strong> {{ $game['time'] }}</br>
+                    <strong>人数限制: </strong> {{ $game['limit'] }}</br>
+                    <strong>端口: </strong> {{ $Port }}</br>
+                    <strong>脚本端口: </strong> {{ $QueryPort }}</br>
+                    <strong>RCON端口: </strong> {{ $RCONPort }}</br>
+                </p>
+                <hr>
+                <form class="form-inline" role="form">
+                    <input id="convertid" type="hidden" value="{{ $game['id'] }}"></input>
+                    <input id="convertkey" type="text" class="form-control"></input>
+                    <a id="convertbtn" class="btn btn-default">使用兑换码</a>
+                    <label id="convertlb"></label>
+                </form>
+                <hr>
+                <a id="starter" class="btn btn-danger">开服</a>
+                <a id="stoper" class="btn btn-danger">关服</a>
+                <a id="upgrader" class="btn btn-warning">更新</a>
+                <a id="deleter" class="btn btn-warning">删档</a>
+                <hr>
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#change">更改配置</button>
                 <div class="modal fade" id="change" tabindex="-1" role="dialog" aria-hidden="true">
                     <div class="modal-dialog">
@@ -147,6 +156,16 @@
                         </div>
                     </div>
                 </div>
+                <hr>
+                <div class="form-inline">
+                      <label class="control-label">选择地图</label>
+                      <select id="mapChanger" name="expMode" class="form-control">
+                          <option value="Thelslands">老地图</option>
+                          <option value="TheCenter">中心岛</option>
+                          <option value="ScorchedEarth_P">焦土</option>
+                      </select>
+                      <a id="mapChangBtn" class="btn btn-default">更改</a>
+                </div>
             @endif
         </div>
 
@@ -157,6 +176,11 @@
         <script src="//cdn.bootcss.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
         <script type="text/javascript">
             $(document).ready(function() {
+                var gameId = '{{ $game['id'] }}'
+                var port = '{{ $Port }}'
+                var qp = '{{ $QueryPort }}'
+                var limit = '{{ $game['limit'] }}'
+
                 $('#creater').click(function() {
                     $.ajax({
                         type: 'POST',
@@ -200,6 +224,82 @@
                 $('#gameChangebtn').click(function() {
                     $('#gameChanger').submit()
                 })
+                $('#mapChangBtn').click(function() {
+                    alert();
+                    $.ajax({
+                        type: 'POST',
+                        url: './changeMap',
+                        data: {
+                            gameId: gameId,
+                            port: port,
+                            qp: qp,
+                            limit: limit,
+                            map: $('#mapChanger option:selected').attr('value')
+                        },
+                        success: function() {
+                            location.reload()
+                        }
+                    })
+                    $(this).attr('disabled', 'disabled')
+                    $(this).text('更改中...')
+                })
+                $('#starter').click(function() {
+                    $.ajax({
+                        type: 'POST',
+                        url: './start?id='+gameId,
+                        success: function() {
+                            location.reload()
+                        }
+                    })
+                    $('#starter').attr('disabled', 'disabled')
+                    $('#stoper').attr('disabled', 'disabled')
+                })
+                $('#stoper').click(function() {
+                    $.ajax({
+                        type: 'POST',
+                        url: './stop?id='+gameId,
+                        success: function() {
+                            location.reload()
+                        }
+                    })
+                    $('#starter').attr('disabled', 'disabled')
+                    $('#stoper').attr('disabled', 'disabled')
+                })
+                $('#upgrader').click(function() {
+                    $.ajax({
+                        type: 'POST',
+                        url: './upgrade?id='+gameId,
+                        success: function() {
+                            location.reload()
+                        }
+                    })
+                    $('#upgrader').attr('disabled', 'disabled')
+                })
+                $('#deleter').click(function() {
+                    $.ajax({
+                        type: 'POST',
+                        url: './delete?id='+gameId,
+                        success: function() {
+                            location.reload()
+                        }
+                    })
+                    $('#deleter').attr('disabled', 'disabled')
+                })
+
+                setInterval(function() {
+                    $.ajax({
+                        type: 'GET',
+                        url: './updated?id'+gameId
+                    }).done(function(msg) {
+                        if (msg.status) {
+                            $('#upgrader').removeAttr('disabled')
+                            $('#upgrader').text('更新')
+                        } else {
+                            $('#upgrader').attr('disabled', 'disabled')
+                            $('#upgrader').text('更新中...')
+                        }
+                    })
+                }, 1000);
             })
         </script>
     </body>

@@ -24,7 +24,7 @@ class gameController
         $qp = 27015 + $c * 3;
         $rp = 27017 + $c * 3;
         $filePath = self::$gamePath['userBase'].'\\'.$port;
-        cp(self::$gamePath['ark'], $filePath, 1);
+        //cp(self::$gamePath['ark'], $filePath, 1);
 
         $h = fopen($filePath.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini', 'rb');
         $c = '';
@@ -54,7 +54,7 @@ class gameController
             }
         }
         fclose($h);
-        file_put_contents($filePath.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini');
+        file_put_contents($filePath.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini', $c);
 
         games::create(['game' => $game, 'owner' => $user]);
         echo 'success';
@@ -86,10 +86,11 @@ class gameController
 
         $gameId = $_GET['id'];
         $port = 7774 + $gameId * 3;
-        $filePath = $gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini';
+        $filePath = self::$gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer';
 
 
         // GameUserSettings 设置
+        //$h = fopen('C:\xampp\htdocs\tmp\GameUserSettings.ini', 'rb');
         $h = fopen($filePath.'\GameUserSettings.ini', 'rb');
         $c = '';
         while(!feof($h)) {
@@ -100,14 +101,14 @@ class gameController
             $t = explode('=', $line);
             switch ($t[0]) {
                 case 'Port':
-                    $Port = $t[1];
+                    $Port = substr($t[1], 0, -2);
                     break;
                 case 'QueryPort':
-                    $QueryPort = $t[1];
+                    $QueryPort = substr($t[1], 0, -2);
                     break;
 
                 case 'RCONPort':
-                    $RCONPort = $t[1];
+                    $RCONPort = substr($t[1], 0, -2);
                     break;
 
                 default:
@@ -117,6 +118,7 @@ class gameController
         }
         fclose($h);
 
+        //$h = fopen('C:\xampp\htdocs\tmp\A.ini', 'rb');
         $h = fopen($filePath.'\Game.ini', 'rb');
         $gameChangeHtml = '';
         while(!feof($h)) {
@@ -181,7 +183,7 @@ class gameController
 
         $gameId = $_GET['id'];
         $port = 7774 + $gameId * 3;
-        $filePath = $gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini';
+        $filePath = self::$gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini';
 
         $h = fopen(self::$temp, 'rb');
         while(!feof($h)) {
@@ -211,7 +213,7 @@ class gameController
 
         $gameId = $_GET['id'];
         $port = 7774 + $gameId * 3;
-        $filePath = $gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\Game.ini';
+        $filePath = self::$gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\Game.ini';
 
         $h = fopen(self::$temp, 'rb');
         while(!feof($h)) {
@@ -258,6 +260,95 @@ class gameController
         // file 需要设置
         file_put_contents($file, $r);
         echo '<script>history.go(-1)</script>';
+    }
+
+    public function start()
+    {
+        if (!users::auth()) {
+            redirect(FILE_PATH);
+        }
+        $gameId = $_GET['id'];
+        $port = 7774 + $gameId * 3;
+        $filePath = self::$gamePath['userBase'].'\\'.$port.'RunServer.cmd';
+        exec($filePath);
+        echo 'success';
+    }
+
+    public function stop()
+    {
+        if (!users::auth()) {
+            redirect(FILE_PATH);
+        }
+        $gameId = $_GET['id'];
+        $port = 7774 + $gameId * 3;
+        $filePath = self::$gamePath['userBase'].'\\'.$port.'StopServer.cmd';
+        exec($filePath);
+        echo 'success';
+    }
+
+    public function upgrade()
+    {
+        if (!users::auth()) {
+            redirect(FILE_PATH);
+        }
+        $gameId = $_GET['id'];
+        $port = 7774 + $gameId * 3;
+        $filePath = self::$gamePath['userBase'].'\\UPDATE\\'.$port.'\update.bat';
+        exec($filePath);
+        echo 'success';
+    }
+
+    public function delete()
+    {
+        if (!users::auth()) {
+            redirect(FILE_PATH);
+        }
+        $gameId = $_GET['id'];
+        $port = 7774 + $gameId * 3;
+        //$filePath = self::$gamePath['userBase'].'\\'.$port.'delete.cmd';
+        exec($filePath);
+        echo 'success';
+    }
+
+    public function updated()
+    {
+        $gameId = $_GET['id'];
+        $port = 7774 + $gameId * 3;
+        $filePath = self::$gamePath['userBase'].'\\UPDATE\\'.$port.'\1.txt';
+        if (file_exists($filePath)) {
+            response()->json(['status' => true]);
+        } else {
+            response()->json(['status' => false]);
+        }
+
+    }
+
+    public function changeMap()
+    {
+        if (!users::auth()) {
+            redirect(FILE_PATH);
+        }
+        $gameId = $_POST['gameId'];
+        $port = $_POST['port'];
+        $qp = $_POST['qp'];
+        $limit = $_POST['limit'];
+        $map = $_POST['map'];
+        $port = 7774 + $gameId * 3;
+        //$path = self::$gamePath['userBase'].'\\'.$port;
+        $filePath = self::$gamePath['userBase'].'\\'.$port.'RunServer.cmd';
+        $filePathwm = self::$gamePath['userBase'].'\\'.$port.'StopServer.cmd';
+
+        $r = 'start "'.$gamePath['userBase'].'\\'.$port.'\ShooterGame\Binaries\Win64\ShooterGameServer.exe'.'" '.$map.'?listen?Port='.$port.'?QueryPort='.$qp.'?MaxPlayers='.$limit.' -nosteamclient -game -server -log';
+        $wmr = 'wmic process where "name=\'ShooterGameServer.exe\' and ExecutablePath=\'D:\\\\ARK\\\\'.$port.'\\\\ShooterGame\\\\Binaries\\\\Win64\\\\ShooterGameServer.exe\'" call Terminate';
+        if (!file_exists($filePath)) {
+            touch($filePath);
+        }
+        if (!file_exists($filePathwm)) {
+            touch($filePathwm);
+        }
+        file_put_contents($filePath, $r);
+        file_put_contents($filePathwm, $wmr);
+        echo 'success';
     }
 
     public static $trans = [
