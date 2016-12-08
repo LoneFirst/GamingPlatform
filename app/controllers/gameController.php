@@ -23,11 +23,12 @@ class gameController
             return;
         }
         $user = $_SESSION['user'];
+        $game = $_POST['game'];
         if (!users::verQuota($user)) {
             return;
         }
-        $game = $_POST['game'];
-        $c = intval(count(games::select(['id'], ['game' => $game])));
+        $st = games::select(['id'], ['game' => 'ark']);
+        $c = count($st);
         $port = 7777 + $c * 3;
         $qp = 27015 + $c * 3;
         $rp = 27017 + $c * 3;
@@ -84,7 +85,6 @@ class gameController
 
         $gameId = $_GET['id'];
         $user = $_SESSION['user'];
-        $verQuota = users::verQuota($user);
         $view = view('home', ['section' => '管理']);
         if ($user != games::getOwnerById($gameId)) {
             redirect(FILE_PATH);
@@ -137,7 +137,7 @@ class gameController
         $gameChangeHtml = '';
         while(!feof($h)) {
             $line = fgets($h);
-            if (!strstr($line, '=')) {
+            if (!strstr($line, '=') && !strstr($line, '.')) {
                 $line = substr($line, 1, -3);
                 $tmp = explode(',', $line);
                 $gameChangeHtml .= '<div class="form-group">
@@ -169,6 +169,10 @@ class gameController
                     </div>';
                 break;
             } else {
+                if (!strstr($line, '=')) {
+                    continue;
+                }
+                
                 $t = explode('=', $line);
                 if (!array_key_exists($t[0], self::$trans)) {
                     continue;
@@ -189,7 +193,6 @@ class gameController
         $view->push('Port', $Port);
         $view->push('QueryPort', $QueryPort);
         $view->push('RCONPort', $RCONPort);
-        $view->push('verQuota', $verQuota);
         $view->render();
     }
 
@@ -255,7 +258,7 @@ class gameController
                 $r .= 'LevelExperienceRampOverrides=(';
                 $exp = 10;
                 for ($i=0;$i<$_POST['xfldj'];$i++) {
-                    $tmp .= 'ExperiencePointsForLevel['.$i.']='.$exp;
+                    $tmp .= 'ExperiencePointsForLevel['.$i.']='.$exp.',';
                     if ($_POST['expMode'] == 'cs') {
                         $exp = 10;
                     } else if ($_POST['expMode'] == 'fgf') {
@@ -289,8 +292,9 @@ class gameController
     public function start()
     {
         if (!users::auth()) {
-            redirect(FILE_PATH);
+            exit();
         }
+        session_write_close();
         $gameId = $_GET['id'];
         $port = 7774 + $gameId * 3;
         $filePath = self::$gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\\';
@@ -305,13 +309,13 @@ class gameController
     public function stop()
     {
         if (!users::auth()) {
-            redirect(FILE_PATH);
+            exit();
         }
+        
         $gameId = $_GET['id'];
         $port = 7774 + $gameId * 3;
         $filePath = self::$gamePath['userBase'].'\\'.$port.'\StopServer.cmd';
         shell_exec($filePath);
-        exit();
     }
 
     public function upgrade()
@@ -365,10 +369,10 @@ class gameController
         //$path = self::$gamePath['userBase'].'\\'.$port;
         $filePath = self::$gamePath['userBase'].'\\'.$port.'\RunServer.cmd';
         $filePathwm = self::$gamePath['userBase'].'\\'.$port.'\StopServer.cmd';
-        $r = 'echo "hi" > running';
+        $r = 'echo "hi" > D:\ARK\\'.$port.'\running.txt'.PHP_EOL;
         $r .= 'start D:\ARK\\'.$port.'\ShooterGame\Binaries\Win64\ShooterGameServer.exe'.' '.$map.'?listen?Port='.$port.'?QueryPort='.$qp.'?MaxPlayers='.$limit.' -nosteamclient -game -server -log';
         $wmr = 'wmic process where "name=\'ShooterGameServer.exe\' and ExecutablePath=\'D:\\\\ARK\\\\'.$port.'\\\\ShooterGame\\\\Binaries\\\\Win64\\\\ShooterGameServer.exe\'" call Terminate';
-        $wmr .= 'del /f /s /q /f running';
+        $wmr .= PHP_EOL.'del /f /s /q /f D:\ARK\\'.$port.'\running.txt';
         if (!file_exists($filePath)) {
             touch($filePath);
         }
@@ -384,7 +388,7 @@ class gameController
     {
         $gameId = $_GET['id'];
         $port = 7774 + $gameId * 3;
-        $filePath = self::$gamePath['userBase'].'\\'.$port.'\running';
+        $filePath = self::$gamePath['userBase'].'\\'.$port.'\running.txt';
         if (file_exists($filePath)) {
             response()->json(['status' => true, 'port' => $port]);
         } else {
@@ -471,87 +475,88 @@ class gameController
         'PerLevelStatsMultiplier_DinoWild[9]' => '野生龙移动速度',
     ];
 
-    public static $data = ['ServerPVE' => '服务器是否为PVE	',
-'HarvestAmountMultiplier' => '总收获倍数[值越大，一次攻击获取材料越多]',
-'DayTimeSpeedScale' => '白天流失速度[值越大，白天时间越短]',
-'NightTimeSpeedScale' => '夜晚流失速度[值越大，夜晚时间越短]',
-'DayCycleSpeedScale' => '时间循环速度[值越大方舟世界内一天对应现实时间越少]',
-'XPMultiplier' => '经验倍率[玩家以及恐龙的经验倍率]',
-'PerPlatformMaxStructuresMultiplier' => '平台鞍最大建筑倍数',
-'NewMaxStructuresInRange' => '最大建筑数量[定范围内的最大建筑碎片的数量限制]',
-'TamingSpeedMultiplier' => '驯服速度[值越大驯服越快]',
-'MaxTamedDinos' => '最大驯服恐龙数量[默认4000]',
-'DifficultyOffset' => '难度设定[固定生成]',
-'DinoCountMultiplier' => '恐龙产卵[最高不建议超过5，值越大世界内恐龙越多]',
-'ServerPassword' => '服务器密码[开启后会需要密码才能进入服务器]',
-'ServerAdminPassword' => '管理员密码[刷东西用的密码，请勿外泄]',
-'ServerCrosshair' => '准星是否启用',
-'globalVoiceChat' => '全球语音聊天',
-'proximityChat' => '附近聊天[如果启用，只有附近的玩家可以看到聊天消息]',
-'alwaysNotifyPlayerLeft' => '玩家离线提醒[如果启用，其余玩家下线会提醒]',
-'alwaysNotifyPlayerJoined' => '玩家上线提醒',
-'ServerHardcore' => '硬汉模式[玩家死后无法重生，必须重新创建一个角色才能游戏]',
-'ServerForceNoHud' => '强制无HUD',
-'AllowThirdPersonPlayer' => '允许第三人称[关闭后不能使用第三人称]',
-'ShowMapPlayerLocation' => '地图显示位置[关闭后地图不再显示自身位置]',
-'ShowFloatingDamageText' => '显示伤害',
-'EnablePVPGamma' => 'PVP伽马设置[开启后PVP服务器玩家也可以设置伽马值]',
-'DisablePvEGamma' => '关闭PVE伽马设置[设置关闭PVE服务器玩家也可以设置伽马值]',
-'PreventTribeAlliances' => '禁止部落联盟[如果启用，则部落不能联盟]',
-'PreventDiseases' => '禁止疾病[如果为是，将关闭疾病]',
-'NonPermanentDiseases' => '非永久性疾病[如果为是，将使疾病不是永久性的，重生后会消除]',
-'AllowCaveBuildingPvE' => '是否允许洞穴内建造	',
-'EnableExtraStructurePreventionVolumes' => '防止资源区建设[固定生成]',
-'NoTributeDownloads' => '禁止角色数据下载	',
-'AllowFlyerCarryPVE' => '是否允许飞行携带[部分功能龙是否能够抓人]',
-'AutoSavePeriodMinutes' => '自动保存时间[分钟为单位，最低10分钟]',
-'PreventOfflinePvP' => '防止离线PVP[如果启用，则禁止袭击离线玩家]',
-'AllowHitMarkers' => '击中提示',
-'ActiveMods' => 'MODID列表[以，为分隔符确定数量，会对个别MODID进行限制]',
-'PlayerCharacterHealthRecoveryMultiplier' => '人物生命恢复[人物生命恢复倍率，值越大恢复越快]',
-'PlayerCharacterStaminaDrainMultiplier' => '人物体力流失[值越大，人物体力流失越快]',
-'PlayerCharacterWaterDrainMultiplier' => '人物水分流失[值越大，人物水分下降越快]',
-'PlayerCharacterFoodDrainMultiplier' => '人物饥饿流失[值越大，人物饥饿下降越快]',
-'PlayerDamageMultiplier' => '人物伤害倍率[值越大造成伤害越高]',
-'PlayerResistanceMultiplier' => '人类抗性[值越大吸收伤害越多，值越小吸收伤害越少.]',
-'DinoCharacterStaminaDrainMultiplier' => '恐龙体力流失[值越大，恐龙体力流失越快]',
-'DinoCharacterHealthRecoveryMultiplier' => '恐龙生命恢复[值越大，恐龙生命回复越快]',
-'DinoDamageMultiplier' => '野生龙伤害倍率[值越大造成伤害越高]',
-'TamedDinoDamageMultiplier' => '驯服龙伤害倍率[驯服龙造成的伤害倍率]',
-'TamedDinoResistanceMultiplier' => '驯服龙抗性[值越大吸收伤害越多，值越小吸收伤害越少.]',
-'DinoResistanceMultiplier' => '野生龙抗性[值越大吸收伤害越多，值越小吸收伤害越少.]',
-'DinoCharacterFoodDrainMultiplier' => '恐龙饥饿流失[值越大，恐龙饥饿下降越快]',
-'AllowAnyoneBabyImprintCuddle' => '允许任何人照顾小龙[如果启用，任何人都能够照顾一个恐龙宝宝（拥抱等）]',
-'PvEDinoDecayPeriodMultiplie' => 'PvE恐龙衰变周期[对恐龙所有时间衰减的基础乘数。只有当PVE选中禁用恐龙衰变.]',
-'DisableImprintDinoBuff' => '禁用恐龙留痕BUFF[如果启用，将禁用恐龙留痕玩家统计奖金，正常情况下任何具体留在恐龙举有压痕质量，获取额外的伤害/抗性BUFF.]',
-'DisableDinoDecayPvE' => '禁用PVE恐龙衰变[如果启用，在PVE模式中禁用恐龙所有权逐渐衰减；否则每个恐龙都可以被任何玩家获得.]',
-'AllowRaidDinoFeeding' => '允许泰坦龙喂养[如果启用，允许您的服务器泰坦龙将被永久驯服（即允许它们被喂养）]',
-'RaidDinoCharacterFoodDrainMultiplier' => '食物消耗倍数[指定的泰坦龙食物消耗倍数。较高的值增加食物的消耗，较低的值减少食物消耗.]',
-'PvPStructureDecay' => 'PVP建筑衰变[如果启用，在PVP经过一段时间的闲置后建筑会自动衰减.]',
-'StructureDamageMultiplier' => '建筑（炮台）伤害[值越大，建筑（包括炮台）造成的伤害越高]',
-'OverrideStructurePlatformPrevention' => '允许炮台在平台鞍[如果启用，允许自动炮塔是可建设于恐龙平台鞍工作.]',
-'AutoDestroyOldStructuresMultiplier' => '自动销毁旧建筑[允许自动摧毁建筑,附近没有部落的一段时间后.服务器自动清除废弃的建筑,如果希望自动关闭功能.设置为 0 禁用它.]',
-'ForceAllStructureLocking' => '强制所有建筑锁定[如果启用，允许锁定所有项目容器.]',
-'StructureResistanceMultiplier' => '建筑抗性[值越大吸收伤害越多，值越小吸收伤害越少.]',
-'MaxPlatformSaddleStructureLimit' => '平台鞍最大建筑数量[平台鞍的最大建筑碎片数量]',
-'FastDecayUnsnappedCoreStructures' => '快速腐蚀核心建筑[如果启用，加快柱子地基腐蚀速度.]',
-'DisableStructureDecayPVE' => 'PVE建筑不衰变[如果关闭，在PVE经过一段时间的闲置后建筑会自动衰减.]',
-'PvEStructureDecayDestructionPeriod' => 'PVE建筑衰减周期[指定PVE模式下建筑自动衰减的时间.]',
-'PvEStructureDecayPeriodMultiplier' => 'PVE建筑衰减倍数[指定玩家建筑的PVE自动衰减倍数.]',
-'PvEAllowStructuresAtSupplyDrops' => '允许结构在供应丢弃PvE[如果启用，将阻止将结构放置在电源放置位置。]',
-'OnlyAutoDestroyCoreStructures' => '只自动销毁核心结构[如果启用，将防止任何非核心/非基础结构自动销毁（但是他们仍然会得到自动销毁，如果一个地板，他们在得到自动销毁）]',
-'OnlyDecayUnsnappedCoreStructures' => '只有衰变解开核心结构[如果启用,只有解开核心结构将衰变。用于消除孤独的支柱/垃圾邮件服务器上的基础.]',
-'ClampResourceHarvestDamage' => '资源收获伤害[如果启用，夹有多少收获伤害你可以做一个资源的剩余资源的健康.（不建议设置）]',
-'KickIdlePlayersPeriod' => '不知道啥玩意[固定生成]',
-'TribeLogDestroyedEnemyStructures' => '部落日志[固定生成]',
-'SpectatorPassword' => '不知道啥玩意[固定生成]',
-'RCONServerGameLogBuffer' => '不知道啥玩意[固定生成]',
-'ListenServerTetherDistanceMultiplier' => '不知道啥玩意[固定生成]',
-'AdminLogging' => '不知道啥玩意[固定生成]',
-'ResourcesRespawnPeriodMultiplier' => '资源重生速率[较低的值导致更频繁的节点重生.]',
-'HarvestHealthMultiplier' => '收获持久[指定可以收获(树木,岩石,尸体等)生命值倍数.这样的对象可以在被摧毁前承受更多伤害,从而提高整体收获]',
-'StructurePreventResourceRadiusMultiplier' => '不知道啥玩意[固定生成]',
-'RCONEnabled' => 'RCON端口是否开启	',
+    public static $data = [
+        'ServerPVE' => '服务器是否为PVE	',
+        'HarvestAmountMultiplier' => '总收获倍数[值越大，一次攻击获取材料越多]',
+        'DayTimeSpeedScale' => '白天流失速度[值越大，白天时间越短]',
+        'NightTimeSpeedScale' => '夜晚流失速度[值越大，夜晚时间越短]',
+        'DayCycleSpeedScale' => '时间循环速度[值越大方舟世界内一天对应现实时间越少]',
+        'XPMultiplier' => '经验倍率[玩家以及恐龙的经验倍率]',
+        'PerPlatformMaxStructuresMultiplier' => '平台鞍最大建筑倍数',
+        'NewMaxStructuresInRange' => '最大建筑数量[定范围内的最大建筑碎片的数量限制]',
+        'TamingSpeedMultiplier' => '驯服速度[值越大驯服越快]',
+        'MaxTamedDinos' => '最大驯服恐龙数量[默认4000]',
+        'DifficultyOffset' => '难度设定[固定生成]',
+        'DinoCountMultiplier' => '恐龙产卵[最高不建议超过5，值越大世界内恐龙越多]',
+        'ServerPassword' => '服务器密码[开启后会需要密码才能进入服务器]',
+        'ServerAdminPassword' => '管理员密码[刷东西用的密码，请勿外泄]',
+        'ServerCrosshair' => '准星是否启用',
+        'globalVoiceChat' => '全球语音聊天',
+        'proximityChat' => '附近聊天[如果启用，只有附近的玩家可以看到聊天消息]',
+        'alwaysNotifyPlayerLeft' => '玩家离线提醒[如果启用，其余玩家下线会提醒]',
+        'alwaysNotifyPlayerJoined' => '玩家上线提醒',
+        'ServerHardcore' => '硬汉模式[玩家死后无法重生，必须重新创建一个角色才能游戏]',
+        'ServerForceNoHud' => '强制无HUD',
+        'AllowThirdPersonPlayer' => '允许第三人称[关闭后不能使用第三人称]',
+        'ShowMapPlayerLocation' => '地图显示位置[关闭后地图不再显示自身位置]',
+        'ShowFloatingDamageText' => '显示伤害',
+        'EnablePVPGamma' => 'PVP伽马设置[开启后PVP服务器玩家也可以设置伽马值]',
+        'DisablePvEGamma' => '关闭PVE伽马设置[设置关闭PVE服务器玩家也可以设置伽马值]',
+        'PreventTribeAlliances' => '禁止部落联盟[如果启用，则部落不能联盟]',
+        'PreventDiseases' => '禁止疾病[如果为是，将关闭疾病]',
+        'NonPermanentDiseases' => '非永久性疾病[如果为是，将使疾病不是永久性的，重生后会消除]',
+        'AllowCaveBuildingPvE' => '是否允许洞穴内建造	',
+        'EnableExtraStructurePreventionVolumes' => '防止资源区建设[固定生成]',
+        'NoTributeDownloads' => '禁止角色数据下载	',
+        'AllowFlyerCarryPVE' => '是否允许飞行携带[部分功能龙是否能够抓人]',
+        'AutoSavePeriodMinutes' => '自动保存时间[分钟为单位，最低10分钟]',
+        'PreventOfflinePvP' => '防止离线PVP[如果启用，则禁止袭击离线玩家]',
+        'AllowHitMarkers' => '击中提示',
+        'ActiveMods' => 'MODID列表[以，为分隔符确定数量，会对个别MODID进行限制]',
+        'PlayerCharacterHealthRecoveryMultiplier' => '人物生命恢复[人物生命恢复倍率，值越大恢复越快]',
+        'PlayerCharacterStaminaDrainMultiplier' => '人物体力流失[值越大，人物体力流失越快]',
+        'PlayerCharacterWaterDrainMultiplier' => '人物水分流失[值越大，人物水分下降越快]',
+        'PlayerCharacterFoodDrainMultiplier' => '人物饥饿流失[值越大，人物饥饿下降越快]',
+        'PlayerDamageMultiplier' => '人物伤害倍率[值越大造成伤害越高]',
+        'PlayerResistanceMultiplier' => '人类抗性[值越大吸收伤害越多，值越小吸收伤害越少.]',
+        'DinoCharacterStaminaDrainMultiplier' => '恐龙体力流失[值越大，恐龙体力流失越快]',
+        'DinoCharacterHealthRecoveryMultiplier' => '恐龙生命恢复[值越大，恐龙生命回复越快]',
+        'DinoDamageMultiplier' => '野生龙伤害倍率[值越大造成伤害越高]',
+        'TamedDinoDamageMultiplier' => '驯服龙伤害倍率[驯服龙造成的伤害倍率]',
+        'TamedDinoResistanceMultiplier' => '驯服龙抗性[值越大吸收伤害越多，值越小吸收伤害越少.]',
+        'DinoResistanceMultiplier' => '野生龙抗性[值越大吸收伤害越多，值越小吸收伤害越少.]',
+        'DinoCharacterFoodDrainMultiplier' => '恐龙饥饿流失[值越大，恐龙饥饿下降越快]',
+        'AllowAnyoneBabyImprintCuddle' => '允许任何人照顾小龙[如果启用，任何人都能够照顾一个恐龙宝宝（拥抱等）]',
+        'PvEDinoDecayPeriodMultiplie' => 'PvE恐龙衰变周期[对恐龙所有时间衰减的基础乘数。只有当PVE选中禁用恐龙衰变.]',
+        'DisableImprintDinoBuff' => '禁用恐龙留痕BUFF[如果启用，将禁用恐龙留痕玩家统计奖金，正常情况下任何具体留在恐龙举有压痕质量，获取额外的伤害/抗性BUFF.]',
+        'DisableDinoDecayPvE' => '禁用PVE恐龙衰变[如果启用，在PVE模式中禁用恐龙所有权逐渐衰减；否则每个恐龙都可以被任何玩家获得.]',
+        'AllowRaidDinoFeeding' => '允许泰坦龙喂养[如果启用，允许您的服务器泰坦龙将被永久驯服（即允许它们被喂养）]',
+        'RaidDinoCharacterFoodDrainMultiplier' => '食物消耗倍数[指定的泰坦龙食物消耗倍数。较高的值增加食物的消耗，较低的值减少食物消耗.]',
+        'PvPStructureDecay' => 'PVP建筑衰变[如果启用，在PVP经过一段时间的闲置后建筑会自动衰减.]',
+        'StructureDamageMultiplier' => '建筑（炮台）伤害[值越大，建筑（包括炮台）造成的伤害越高]',
+        'OverrideStructurePlatformPrevention' => '允许炮台在平台鞍[如果启用，允许自动炮塔是可建设于恐龙平台鞍工作.]',
+        'AutoDestroyOldStructuresMultiplier' => '自动销毁旧建筑[允许自动摧毁建筑,附近没有部落的一段时间后.服务器自动清除废弃的建筑,如果希望自动关闭功能.设置为 0 禁用它.]',
+        'ForceAllStructureLocking' => '强制所有建筑锁定[如果启用，允许锁定所有项目容器.]',
+        'StructureResistanceMultiplier' => '建筑抗性[值越大吸收伤害越多，值越小吸收伤害越少.]',
+        'MaxPlatformSaddleStructureLimit' => '平台鞍最大建筑数量[平台鞍的最大建筑碎片数量]',
+        'FastDecayUnsnappedCoreStructures' => '快速腐蚀核心建筑[如果启用，加快柱子地基腐蚀速度.]',
+        'DisableStructureDecayPVE' => 'PVE建筑不衰变[如果关闭，在PVE经过一段时间的闲置后建筑会自动衰减.]',
+        'PvEStructureDecayDestructionPeriod' => 'PVE建筑衰减周期[指定PVE模式下建筑自动衰减的时间.]',
+        'PvEStructureDecayPeriodMultiplier' => 'PVE建筑衰减倍数[指定玩家建筑的PVE自动衰减倍数.]',
+        'PvEAllowStructuresAtSupplyDrops' => '允许结构在供应丢弃PvE[如果启用，将阻止将结构放置在电源放置位置。]',
+        'OnlyAutoDestroyCoreStructures' => '只自动销毁核心结构[如果启用，将防止任何非核心/非基础结构自动销毁（但是他们仍然会得到自动销毁，如果一个地板，他们在得到自动销毁）]',
+        'OnlyDecayUnsnappedCoreStructures' => '只有衰变解开核心结构[如果启用,只有解开核心结构将衰变。用于消除孤独的支柱/垃圾邮件服务器上的基础.]',
+        'ClampResourceHarvestDamage' => '资源收获伤害[如果启用，夹有多少收获伤害你可以做一个资源的剩余资源的健康.（不建议设置）]',
+        'KickIdlePlayersPeriod' => '不知道啥玩意[固定生成]',
+        'TribeLogDestroyedEnemyStructures' => '部落日志[固定生成]',
+        'SpectatorPassword' => '不知道啥玩意[固定生成]',
+        'RCONServerGameLogBuffer' => '不知道啥玩意[固定生成]',
+        'ListenServerTetherDistanceMultiplier' => '不知道啥玩意[固定生成]',
+        'AdminLogging' => '不知道啥玩意[固定生成]',
+        'ResourcesRespawnPeriodMultiplier' => '资源重生速率[较低的值导致更频繁的节点重生.]',
+        'HarvestHealthMultiplier' => '收获持久[指定可以收获(树木,岩石,尸体等)生命值倍数.这样的对象可以在被摧毁前承受更多伤害,从而提高整体收获]',
+        'StructurePreventResourceRadiusMultiplier' => '不知道啥玩意[固定生成]',
+        'RCONEnabled' => 'RCON端口是否开启	',
    
         'SessionName' => '服务器名称【建议不超过20个字】',
         'Message' => '进服公告',

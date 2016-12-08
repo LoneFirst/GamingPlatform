@@ -18,6 +18,7 @@ class homeController
     public function index()
     {
         $user = $_SESSION['user'];
+        $verQuota = users::verQuota($user);
         $gameList = games::select(['id', 'game', 'time', 'limit'], ['owner' => $user]);
         if ($gameList) {
             foreach ($gameList as $key => $value) {
@@ -30,7 +31,9 @@ class homeController
                 $gameList[$key]['game'] = games::$gameName[$value['game']];
             }
         }
-        view('home', ['section' => '纵览'])->push('gameList', $gameList)->render();
+        $view = view('home', ['section' => '纵览']);
+        $view->push('verQuota', $verQuota);
+        $view->push('gameList', $gameList)->render();
     }
 
     public function convert()

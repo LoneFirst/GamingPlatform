@@ -16,7 +16,6 @@ function hi()
 {
     echo 'hi';
 }
-
 // 注册异常处理函数
 core\error::registerHandler();
 
@@ -37,7 +36,6 @@ function view($viewName,array $data = NULL)
     $view = new core\view($viewName, $data);
     return $view;
 }
-
 
 // 重定向
 function redirect($url) {

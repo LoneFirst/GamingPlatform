@@ -117,19 +117,20 @@
                                 <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
                                 <h4 class="modal-title">更改配置</h4>
                             </div>
-                            <div class="modal-body">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <form id="changer" action="./change?id={{ $game['id'] }}" method="POST" class="form-horizontal" role="form">
-                                            {{ $managePageHtml }}
-                                        </form>
+                            <form id="changer" action="./change?id={{ $game['id'] }}" method="POST" class="form-horizontal" role="form">
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <form id="changer" action="./change?id={{ $game['id'] }}" method="POST" class="form-horizontal" role="form">
+                                                {{ $managePageHtml }}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
-                                <button id="changebtn" type="button" class="btn btn-primary">保存更改</button>
-                            </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                                    <button id="changebtn" type="submit" class="btn btn-primary">保存更改</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -142,19 +143,20 @@
                                 <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
                                 <h4 class="modal-title">更改游戏配置</h4>
                             </div>
-                            <div class="modal-body">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <form id="gameChanger" action="./gameChange?id={{ $game['id'] }}" method="POST" class="form-horizontal" role="form">
-                                            {{ $gameChangeHtml }}
-                                        </form>
+                            <form id="gameChanger" action="./gameChange?id={{ $game['id'] }}" method="POST" class="form-horizontal" role="form">
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            
+                                                {{ $gameChangeHtml }}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
-                                <button id="gameChangebtn" type="button" class="btn btn-primary">保存更改</button>
-                            </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                                    <button id="gameChangebtn" type="submit" class="btn btn-primary">保存更改</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -221,12 +223,6 @@
                     })
                 })
 
-                $('#changebtn').click(function() {
-                    $('#changer').submit()
-                })
-                $('#gameChangebtn').click(function() {
-                    $('#gameChanger').submit()
-                })
                 $('#mapChangebtn').click(function() {
                     $.ajax({
                         type: 'POST',
@@ -248,13 +244,9 @@
                 $('#starter').click(function() {
                     $.ajax({
                         type: 'POST',
-                        url: './start?id='+gameId,
-                        success: function() {
-                            location.reload()
-                        }
+                        url: './start?id='+gameId
                     })
-                    $('#starter').attr('disabled', 'disabled')
-                    $('#stoper').attr('disabled', 'disabled')
+                    location.reload()
                 })
                 $('#stoper').click(function() {
                     $.ajax({
@@ -264,8 +256,7 @@
                             location.reload()
                         }
                     })
-                    $('#starter').attr('disabled', 'disabled')
-                    $('#stoper').attr('disabled', 'disabled')
+                    location.reload()
                 })
                 $('#upgrader').click(function() {
                     $.ajax({
@@ -311,7 +302,7 @@
                             $('#starter').attr('disabled', 'disabled')
                             $('#stoper').removeAttr('disabled')
                         } else {
-                            $('#stoper').attr('disabled', 'disabled')
+                            //$('#stoper').attr('disabled', 'disabled')
                             $('#starter').removeAttr('disabled')
                         }
                     })
