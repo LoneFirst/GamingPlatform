@@ -18,7 +18,7 @@ class response
         return $url;
     }
 
-    public function download($filepath, $filename = NULL, $contentType = NULL)
+    public function download(string $filepath, string $filename = NULL, $contentType = NULL)
     {
         if ($contentType == NULL) {
             $contentType = $this->getContentType($filepath);

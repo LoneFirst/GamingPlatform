@@ -4,6 +4,7 @@ namespace controllers;
 use models\users;
 use models\keys;
 use models\games;
+use controllers\gameController;
 
 class homeController
 {
@@ -38,13 +39,13 @@ class homeController
             redirect('./');
         }
         $user = $_SESSION['user'];
-        $gameId = $_POST['gameId'];
+        $gameId = $_POST['gameId'] or 1;
         if (isset($_POST['key'])) {
             $st = keys::select(['used', 'type', 'value'], ['key' => $_POST['key']])[0];
             if (isset($st['value'])) {
                 if (is_null($st['used'])) {
                     $type = $st['type'];
-                    $game = games::select([$type], ['id' => $gameId])[0];
+                    $game = games::select(['time', 'limit'], ['id' => $gameId])[0];
                     if ($type == 'time') {
                         if ($game['time'] < time()) {
                             $value = time() + $st['value'];
@@ -55,10 +56,11 @@ class homeController
                         $value = $game['limit'] + $st['value'];
 
                         $port = 7774 + $gameId * 3;
-                        $filePath = $gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\GameUserSettings.ini';
+                        $filePath = gameController::$gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\\'.gameController::$iniName['user'];
                         $h = fopen($filePath, 'rb');
                         $c = '';
                         while(!feof($h)) {
+                        /*
                             $line = fgets($h);
                             if (!strstr($line, '=')) {
                                 $c .= $line;
@@ -73,9 +75,12 @@ class homeController
                                     $c .= $line;
                                     break;
                             }
+                            */
+                            $c .= fread($h, 4096);
                         }
+                        $c = preg_replace('/MaxPlayers=[0-9]+/', 'MaxPlayers='.$value, $c);
                         fclose($h);
-                        file_put_contents($filePath);
+                        file_put_contents($filePath, $c);
 
                     }
                     games::update(['id' => $gameId], [$type => $value]);

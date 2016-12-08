@@ -57,7 +57,9 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <a id="creater" class="creater btn btn-primary">创建</a>
+                    <a id="creater" class="creater btn btn-primary"{{ $verQuota?'':'disabled="disabled"' }}>
+                        {{ $verQuota?'创建':'配额已达上限' }}
+                    </a>
                 </div>
             </form>
                 @if $gameList
@@ -118,7 +120,7 @@
                             <div class="modal-body">
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <form id="changer" action="./change" method="POST" class="form-horizontal" role="form">
+                                        <form id="changer" action="./change?id={{ $game['id'] }}" method="POST" class="form-horizontal" role="form">
                                             {{ $managePageHtml }}
                                         </form>
                                     </div>
@@ -143,7 +145,7 @@
                             <div class="modal-body">
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <form id="gameChanger" action="./gameChange" method="POST" class="form-horizontal" role="form">
+                                        <form id="gameChanger" action="./gameChange?id={{ $game['id'] }}" method="POST" class="form-horizontal" role="form">
                                             {{ $gameChangeHtml }}
                                         </form>
                                     </div>
@@ -158,13 +160,14 @@
                 </div>
                 <hr>
                 <div class="form-inline">
-                      <label class="control-label">选择地图</label>
+                      <label class="control-label">更改地图</label>
                       <select id="mapChanger" name="expMode" class="form-control">
-                          <option value="Thelslands">老地图</option>
+                          <option value="TheIsland">老地图</option>
                           <option value="TheCenter">中心岛</option>
                           <option value="ScorchedEarth_P">焦土</option>
                       </select>
-                      <a id="mapChangBtn" class="btn btn-default">更改</a>
+                      <a id="mapChangebtn" class="btn btn-default">选择</a>
+                      <p class="text-danger">每次更改配置之后重新开服之前请重新选择地图</p>
                 </div>
             @endif
         </div>
@@ -224,8 +227,7 @@
                 $('#gameChangebtn').click(function() {
                     $('#gameChanger').submit()
                 })
-                $('#mapChangBtn').click(function() {
-                    alert();
+                $('#mapChangebtn').click(function() {
                     $.ajax({
                         type: 'POST',
                         url: './changeMap',
@@ -289,7 +291,7 @@
                 setInterval(function() {
                     $.ajax({
                         type: 'GET',
-                        url: './updated?id'+gameId
+                        url: './updated?id='+gameId
                     }).done(function(msg) {
                         if (msg.status) {
                             $('#upgrader').removeAttr('disabled')
@@ -297,6 +299,20 @@
                         } else {
                             $('#upgrader').attr('disabled', 'disabled')
                             $('#upgrader').text('更新中...')
+                        }
+                    })
+                    
+                    $.ajax({
+                        type: 'GET',
+                        url: './serverStatus?id='+gameId
+                    }).done(function(msg) {
+                    console.log(msg)
+                        if (msg.status) {
+                            $('#starter').attr('disabled', 'disabled')
+                            $('#stoper').removeAttr('disabled')
+                        } else {
+                            $('#stoper').attr('disabled', 'disabled')
+                            $('#starter').removeAttr('disabled')
                         }
                     })
                 }, 1000);

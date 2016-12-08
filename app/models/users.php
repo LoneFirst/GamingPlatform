@@ -2,6 +2,7 @@
 namespace models;
 
 use core\model;
+use models\games;
 
 class users extends model
 {
@@ -38,5 +39,16 @@ class users extends model
     {
         $st = self::select(['password'], ['email' => $email]);
         return password_verify($password, $st[0]['password']);
+    }
+    
+    public static function verQuota($email)
+    {
+        $st = self::select(['quota'], ['email' => $email]);
+        $game = games::select(['id'], ['owner' => $email]);
+        if (count($game) < $st[0]['quota']) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

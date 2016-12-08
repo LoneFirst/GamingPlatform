@@ -41,7 +41,7 @@ $this->config = [
     ],
 
     'log' => [
-        0 => true,
+        0 => false,
         'path' => ROOT_PATH.'log/',
     ]
 

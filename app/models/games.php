@@ -8,6 +8,7 @@ class games extends model
     public static $gameName = [
         'ark' => '方舟',
     ];
+    
     public static function getOwnerById($id)
     {
         $r = games::select(['owner'], ['id' => $id]);
