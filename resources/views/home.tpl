@@ -39,9 +39,15 @@
                 <div id="navbar" class="navbar-collapse collapse">
                     <ul class="nav navbar-nav">
                         <li {{ ($section=='纵览')?'class="active"':'' }}><a href="./home">纵览</a></li>
+                        <li {{ ($section=='兑换')?'class="active"':'' }}><a href="./convert">兑换</a></li>
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
-                        <li><a href="./logout">登出</a></li>
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown">{{ $user }} <span class="caret"></a>
+                            <ul class="dropdown-menu" role="menu">
+                                <li><a href="./logout">登出</a></li>
+                            </ul>
+                        </li>
                     </ul>
                 </div><!--/.nav-collapse -->
             </div>
@@ -171,6 +177,18 @@
                       <a id="mapChangebtn" class="btn btn-default">选择</a>
                       <p class="text-danger">每次更改配置之后重新开服之前请重新选择地图</p>
                 </div>
+            @elseif $section == '兑换'
+                @if isset($msg)
+                    @if $msg['status']
+                    <div class="alert alert-success">{{ $msg['msg'] }}</div>
+                    @else
+                    <div class="alert alert-danger">{{ $msg['msg'] }}</div>
+                    @endif
+                @endif
+                <form action="./convert" method="GET" class="form" role="form">
+                    <h2>输入兑换码</h2>
+                    <input type="text" name="key" class="form-control"></input>
+                </form>
             @endif
         </div>
 

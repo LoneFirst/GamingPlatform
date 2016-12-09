@@ -31,7 +31,7 @@ class homeController
                 $gameList[$key]['game'] = games::$gameName[$value['game']];
             }
         }
-        $view = view('home', ['section' => '纵览']);
+        $view = view('home', ['section' => '纵览', 'user' => $user]);
         $view->push('verQuota', $verQuota);
         $view->push('gameList', $gameList)->render();
     }
@@ -42,52 +42,75 @@ class homeController
             redirect('./');
         }
         $user = $_SESSION['user'];
-        $gameId = $_POST['gameId'] or 1;
+        if (isset($_POST['gameId'])) {
+            $gameId = $_POST['gameId'];
+        } elseif (isset($_GET['gameId'])) {
+            $gameId = $_GET['gameId'];
+        }
+        
         if (isset($_POST['key'])) {
-            $st = keys::select(['used', 'type', 'value'], ['key' => $_POST['key']])[0];
+            $key = $_POST['key'];
+        } elseif (isset($_GET['key'])) {
+            $key = $_GET['key'];
+        }
+        if (isset($key)) {
+            $st = keys::select(['used', 'type', 'value'], ['key' => $key])[0];
+            $value = $st['value'];
             if (isset($st['value'])) {
                 if (is_null($st['used'])) {
                     $type = $st['type'];
                     $game = games::select(['time', 'limit'], ['id' => $gameId])[0];
                     if ($type == 'time') {
-                        if ($game['time'] < time()) {
+                        if (!isset($gameId)) {
+                            $msg = [false, '请在游戏管理页面使用此兑换码'];
+                        } elseif ($game['time'] < time()) {
                             $value = time() + $st['value'];
+                            games::update(['id' => $gameId], [$type => $value]);
                         } else {
                             $value = $game['time'] + $st['value'];
+                            games::update(['id' => $gameId], [$type => $value]);
                         }
                     } elseif ($type == 'limit') {
-                        $value = $game['limit'] + $st['value'];
+                        if (!isset($gameId)) {
+                            $msg = [false, '请在游戏管理页面使用此兑换码'];
+                        } else {
+                        
+                            $value = $game['limit'] + $st['value'];
 
-                        $port = 7774 + $gameId * 3;
-                        $filePath = gameController::$gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\\'.gameController::$iniName['user'];
-                        $h = fopen($filePath, 'rb');
-                        $c = '';
-                        while(!feof($h)) {
-                        /*
-                            $line = fgets($h);
-                            if (!strstr($line, '=')) {
-                                $c .= $line;
-                                continue;
-                            }
-                            $t = explode('=', $line);
-                            switch ($t[0]) {
-                                case 'MaxPlayers':
-                                    $c .= 'MaxPlayers='.$value.PHP_EOL;
-                                    break;
-                                default:
+                            $port = 7774 + $gameId * 3;
+                            $filePath = gameController::$gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\\'.gameController::$iniName['user'];
+                            $h = fopen($filePath, 'rb');
+                            $c = '';
+                            while(!feof($h)) {
+                            /*
+                                $line = fgets($h);
+                                if (!strstr($line, '=')) {
                                     $c .= $line;
-                                    break;
+                                    continue;
+                                }
+                                $t = explode('=', $line);
+                                switch ($t[0]) {
+                                    case 'MaxPlayers':
+                                        $c .= 'MaxPlayers='.$value.PHP_EOL;
+                                        break;
+                                    default:
+                                        $c .= $line;
+                                        break;
+                                }
+                                */
+                                $c .= fread($h, 4096);
                             }
-                            */
-                            $c .= fread($h, 4096);
+                            $c = preg_replace('/MaxPlayers=[0-9]+/', 'MaxPlayers='.$value, $c);
+                            fclose($h);
+                            file_put_contents($filePath, $c);
+                            games::update(['id' => $gameId], [$type => $value]);
                         }
-                        $c = preg_replace('/MaxPlayers=[0-9]+/', 'MaxPlayers='.$value, $c);
-                        fclose($h);
-                        file_put_contents($filePath, $c);
-
+                    } elseif ($type == 'quota') {
+                        $st = users::select(['quota'], ['email' => $user])[0];
+                        $value = $st['quota'] + $value;
+                        users::update(['email' => $user], ['quota' => $value]);
                     }
-                    games::update(['id' => $gameId], [$type => $value]);
-                    keys::update(['key' => $_POST['key']], ['used' => $user]);
+                    keys::update(['key' => $key], ['used' => $user]);
                     $msg = ['status' => true, 'msg' => '兑换成功'];
                 } else {
                     $msg = ['status' => false, 'msg' => '兑换码已被使用'];
@@ -96,7 +119,12 @@ class homeController
                 $msg = ['status' => false, 'msg' => '兑换码不存在'];
             }
         }
-        response()->json($msg);
+        if (\core\request::method() == 'POST') {
+            response()->json($msg);
+        } else {
+            $view = view('home', ['section' => '兑换', 'user' => $user]);
+            $view->push('msg', $msg)->render();
+        }
     }
 
     // public function ark()

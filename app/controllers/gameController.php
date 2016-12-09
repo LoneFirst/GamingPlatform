@@ -85,7 +85,7 @@ class gameController
 
         $gameId = $_GET['id'];
         $user = $_SESSION['user'];
-        $view = view('home', ['section' => '管理']);
+        $view = view('home', ['section' => '管理', 'user' => $user]);
         if ($user != games::getOwnerById($gameId)) {
             redirect(FILE_PATH);
         }
