@@ -5,12 +5,12 @@ $this->reg('register', 'user@register');
 $this->reg('logout', 'user@logout');
 
 $this->reg('home', 'home@index');
-$this->reg('create', 'game@create');
+$this->reg('create', 'game@create', 'POST');
 $this->reg('manage', 'game@manage');
 $this->reg('convert', 'home@convert', 'POST');
 $this->reg('change', 'game@change', 'POST');
 $this->reg('gameChange', 'game@gameChange', 'POST');
-$this->reg('changeMap', 'game@changeMap');
+$this->reg('changeMap', 'game@changeMap', 'POST');
 $this->reg('start', 'game@start', 'POST');
 $this->reg('stop', 'game@stop', 'POST');
 $this->reg('upgrade', 'game@upgrade', 'POST');

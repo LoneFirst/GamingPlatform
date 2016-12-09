@@ -181,7 +181,7 @@ class gameController
                 <div class="form-group">
                   <label class="col-sm-6 control-label">'.self::$trans[$t[0]].'</label>
                   <div class="col-sm-6">
-                    <input name="'.$t[0].'" class="form-control" value="'.$t[1].'">
+                    <input name="'.str_replace(']', '】', str_replace('[', '【', $t[0])).'" class="form-control" value="'.$t[1].'">
                   </div>
                 </div>';
             }
@@ -245,7 +245,7 @@ class gameController
                 $exp = 10;
                 $tmp = '';
                 for ($i=0;$i<$_POST['rwdj'];$i++) {
-                    $tmp .= 'ExperiencePointsForLevel['.$i.']='.$exp;
+                    $tmp .= 'ExperiencePointsForLevel['.$i.']='.$exp.',';
                     if ($_POST['expMode'] == 'cs') {
                         $exp = 10;
                     } else if ($_POST['expMode'] == 'fgf') {
@@ -277,8 +277,14 @@ class gameController
                 continue;
             }
             $t = explode('=', $line);
-            if (isset($_POST[$t[0]])) {
-                $r .= $t[0].'='.$_POST[$t[0]].PHP_EOL;
+            if (isset($_POST[str_replace(']', '】', str_replace('[', '【', $t[0]))])) {/*
+                if (strstr($t[0], '_')) {
+                    $num = intval(preg_replace('/\[([0-9]+)\]/', '\\1', $t[0]));
+                    $str = preg_replace('/([A-Za-z_]+)/', '\\1', $t[0]);
+                    $r .= $t[0].'='.$_POST[$str][$num].PHP_EOL;
+                } else {*/
+                    $r .= $t[0].'='.$_POST[str_replace(']', '】', str_replace('[', '【', $t[0]))].PHP_EOL;
+                /*}*/
             } else {
                 $r .= $line;
             }
@@ -294,14 +300,60 @@ class gameController
         if (!users::auth()) {
             exit();
         }
-        session_write_close();
         $gameId = $_GET['id'];
         $port = 7774 + $gameId * 3;
+                
         $filePath = self::$gamePath['userBase'].'\\'.$port.'\ShooterGame\Saved\Config\WindowsServer\\';
 
         copy($filePath.self::$iniName['user'], $filePath.'GameUserSettings.ini');
-        copy($filePath.self::$iniName['game'], $filePath.'Game.ini');
+        @touch($filePath.'Game.ini');
+        
+        $h = fopen($filePath.self::$iniName['game'], 'rb');
+        $r = '';
+        while(!feof($h)) {
+            $line = fgets($h);
+            if (strstr($line, ',')) {
+                $line = substr($line, 1, -3);
+                $params = explode(',', $line);
+                $r .= 'LevelExperienceRampOverrides=(';
+                $exp = 10;
+                $tmp = '';
+                for ($i=0;$i<$params[1];$i++) {
+                    $tmp .= 'ExperiencePointsForLevel['.$i.']='.$exp.',';
+                    if ($params[0] == 'cs') {
+                        $exp = 10;
+                    } else if ($params[0] == 'fgf') {
+                        $exp += $i * 5 + 10;
+                    }
+                }
+                $tmp = substr($tmp, 0, -1);
+                $r .= $tmp.')'.PHP_EOL;
+                $tmp = '';
+                $r .= 'LevelExperienceRampOverrides=(';
+                $exp = 10;
+                for ($i=0;$i<$params[3];$i++) {
+                    $tmp .= 'ExperiencePointsForLevel['.$i.']='.$exp.',';
+                    if ($params[0] == 'cs') {
+                        $exp = 10;
+                    } else if ($params[0] == 'fgf') {
+                        $exp += $i * 5 + 10;
+                    }
+                }
+                $tmp = substr($tmp, 0, -1);
+                $r .= $tmp.')'.PHP_EOL;
+                for ($i=0;$i<$params[1];$i++) {
+                    $r .= 'OverridePlayerLevelEngramPoints='.$params[2].PHP_EOL;
+                }
+                break;
+            } else {
+                $r .= $line;
+            }
+        }
+        fclose($h);
+        file_put_contents($filePath.'Game.ini', $r);
+
         $filePath = self::$gamePath['userBase'].'\\'.$port.'\RunServer.cmd';
+        session_write_close();
         shell_exec($filePath);
         exit();
     }
@@ -326,8 +378,8 @@ class gameController
         $gameId = $_GET['id'];
         $port = 7774 + $gameId * 3;
         $filePath = self::$gamePath['userBase'].'\\UPDATE\\'.$port.'\update.bat';
+        session_write_close();
         shell_exec($filePath);
-        echo 'success';
     }
 
     public function delete()
